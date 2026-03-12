@@ -132,10 +132,6 @@ func AddMethodToService(
 		outputMb = inputMb
 	}
 
-	inputRpc := builder.RpcTypeMessage(inputMb, clientStreaming)
-	outputRpc := builder.RpcTypeMessage(outputMb, serverStreaming)
-	mtb := builder.NewMethod(methodName, inputRpc, outputRpc)
-
 	for _, child := range fb.GetChildren() {
 		sb, ok := child.(*builder.ServiceBuilder)
 		if !ok {
@@ -144,6 +140,10 @@ func AddMethodToService(
 		if serviceName != "" && sb.GetName() != serviceName {
 			continue
 		}
+		// Create a fresh method builder for each service (builders can only have one parent)
+		inRpc := builder.RpcTypeMessage(inputMb, clientStreaming)
+		outRpc := builder.RpcTypeMessage(outputMb, serverStreaming)
+		mtb := builder.NewMethod(methodName, inRpc, outRpc)
 		if err := sb.TryAddMethod(mtb); err != nil {
 			return nil, fmt.Errorf("adding method to %s: %w", sb.GetName(), err)
 		}
