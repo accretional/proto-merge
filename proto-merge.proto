@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package merge;
+
+option go_package = "github.com/accretional/merge/pb";
+
+import "google/protobuf/descriptor.proto";
+
+// StringValue is a simple wrapper for string output from RPCs.
+message StringValue {
+  string value = 1;
+}
+
+// Descriptor is a union of all proto descriptor types.
+message Descriptor {
+  oneof kind {
+    google.protobuf.DescriptorProto message = 1;
+    google.protobuf.MethodDescriptorProto method = 2;
+    google.protobuf.ServiceDescriptorProto service = 3;
+    google.protobuf.FileDescriptorProto file = 4;
+    google.protobuf.FieldDescriptorProto field = 5;
+    google.protobuf.EnumDescriptorProto enum = 6;
+  }
+}
+
+// FieldModification describes adding or changing a field on messages.
+message FieldModification {
+  string field_name = 1;
+  int32 field_type = 2; // google.protobuf.FieldDescriptorProto.Type value
+  string type_name = 3; // for message/enum references
+  int32 field_number = 4; // 0 = auto-assign
+  bool repeated = 5;
+  string target_message = 6; // empty = apply to all messages
+}
+
+// ServiceModification describes adding methods to services.
+message ServiceModification {
+  string method_name = 1;
+  string input_type = 2;
+  string output_type = 3;
+  bool client_streaming = 4;
+  bool server_streaming = 5;
+  string target_service = 6; // empty = apply to all services
+}
+
+// TransformCommand describes a transformation to apply.
+message TransformCommand {
+  oneof command {
+    FieldModification add_field = 1;
+    ServiceModification add_method = 2;
+    MergeMessages merge_messages = 3;
+    RenameSymbol rename = 4;
+    RemoveField remove_field = 5;
+  }
+}
+
+// MergeMessages combines two message types into one.
+message MergeMessages {
+  string source_message = 1;
+  string target_message = 2;
+  string result_name = 3; // empty = use target name
+}
+
+// RenameSymbol renames a message, service, field, or method.
+message RenameSymbol {
+  string old_name = 1;
+  string new_name = 2;
+}
+
+// RemoveField removes a field from a message.
+message RemoveField {
+  string message_name = 1;
+  string field_name = 2;
+}
+
+// WalkRequest walks a file descriptor applying method-level transforms.
+message WalkRequest {
+  google.protobuf.FileDescriptorProto file = 1;
+  repeated TransformCommand commands = 2;
+}
+
+// WalkResponse is the transformed file descriptor.
+message WalkResponse {
+  google.protobuf.FileDescriptorProto file = 1;
+  repeated string log = 2;
+}
+
+// BuildRequest orchestrates download + transform pipeline.
+message BuildRequest {
+  repeated string source_repos = 1; // GitHub org/user names to scan
+  repeated TransformCommand commands = 2;
+}
+
+// BuildResponse contains the processed results.
+message BuildResponse {
+  repeated google.protobuf.FileDescriptorProto files = 1;
+  google.protobuf.FileDescriptorProto bundled = 2;
+  repeated string log = 3;
+}
+
+// Merger service composes all operations.
+service Merger {
+  // Download fetches .proto files from source repos.
+  rpc Download(stream StringValue) returns (stream google.protobuf.FileDescriptorProto);
+
+  // Describe converts descriptors to human-readable StringValue output.
+  rpc Describe(Descriptor) returns (StringValue);
+
+  // Transform applies modifications to a file descriptor.
+  rpc Transform(WalkRequest) returns (WalkResponse);
+
+  // Build orchestrates: download sources, parse, transform, bundle.
+  rpc Build(BuildRequest) returns (BuildResponse);
+}
