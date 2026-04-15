@@ -100,6 +100,9 @@ message BuildResponse {
 
 // Merger service composes all operations.
 service Merger {
+  // TODO:Claude - rename Download to Extract, have it take URIs (corresponding to individual files, not repos)
+  //  We are going to use accretional/proto-repo to download git repositories to local filesystem separately 
+
   // Download fetches .proto files from source repos.
   rpc Download(stream StringValue) returns (stream google.protobuf.FileDescriptorProto);
 
