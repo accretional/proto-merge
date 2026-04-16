@@ -79,7 +79,7 @@ func extractBlocks(source, keyword string) []Message {
 		body := extractBraceBlock(source, braceStart)
 		results = append(results, Message{
 			Name: name,
-			Body: source[loc[0] : braceStart+len(body)+1],
+			Body: source[loc[0] : braceStart+len(body)+2],
 		})
 	}
 	return results
@@ -95,7 +95,7 @@ func extractServiceBlocks(source string) []Service {
 		body := extractBraceBlock(source, braceStart)
 		results = append(results, Service{
 			Name: name,
-			Body: source[loc[0] : braceStart+len(body)+1],
+			Body: source[loc[0] : braceStart+len(body)+2],
 		})
 	}
 	return results
@@ -111,7 +111,7 @@ func extractEnumBlocks(source string) []Enum {
 		body := extractBraceBlock(source, braceStart)
 		results = append(results, Enum{
 			Name: name,
-			Body: source[loc[0] : braceStart+len(body)+1],
+			Body: source[loc[0] : braceStart+len(body)+2],
 		})
 	}
 	return results
